@@ -1,0 +1,32 @@
+---
+- name: "Apache installation"
+  hosts: prod
+  become: true
+  pre_tasks:
+  - name: "Install EPEL repo"
+    package: name=epel-release state=present
+    when: ansible_distribution == "CentOS"
+
+  - name: "Yum configuration of Docker"
+    yum_repository:
+      name: docker
+      description: "docker repository"
+      baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+      gpgcheck: no   
+
+  - name: "Installing docker"
+    package:
+      name: docker-ce
+      state: latest
+
+  - name: "Docker service start and enable"
+    service:
+       name: docker
+       state: started
+       enabled: yes
+  - name: "pulling httpd image from docker hub"
+    docker_container:
+      name: webapp
+      image: httpd
+      ports:
+        - "80:80"

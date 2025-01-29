@@ -1,0 +1,40 @@
+---
+- name: "Apache installation"
+  hosts: prod
+  become: true
+  pre_tasks:
+  - name: "Install EPEL repo"
+    package: name=epel-release state=present
+    when: ansible_distribution == "CentOS"
+
+  - name: Download pip script
+    get_url:
+      url: https://bootstrap.pypa.io/pip/2.7/get-pip.py
+      dest: /tmp/get-pip.py
+  - name: Install python-pip
+    ansible.builtin.command: python2.7 /tmp/get-pip.py
+  - name: Install docker python
+    pip: name=docker-py
+  
+  - name: Start and enable Docker service
+    service:
+      name: docker
+      state: started
+      enabled: yes
+    tags: 
+      - docker
+
+  - name: Pull httpd server image from Docker Hub
+    command: docker pull httpd:latest
+    tags: 
+     - docker
+
+  tasks:
+  - name: "Create Apache conteneur"
+    docker_container:
+      name: webapp
+      image: httpd:latest
+      ports:
+        - "80:80"
+
+      
