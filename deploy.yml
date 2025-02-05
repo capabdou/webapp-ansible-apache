@@ -3,30 +3,42 @@
   hosts: prod
   become: true
   pre_tasks:
-  - name: "Install EPEL repo"
-    package: name=epel-release state=present
-    when: ansible_distribution == "CentOS"
+   - name: "Install EPEL repo"
+     package: name= '{{ item }}' state=present
+     when: ansible_distribution == "CentOS"
+     loop:
+       - epel-release
+       - wget
+       - git
+  
+  tasks:
+   - name: "Copy website file template"
+     template:
+       src: index.html.j2
+       dest: /home/vagrant/index.html
 
-  - name: "Yum configuration of Docker"
-    yum_repository:
-      name: docker
-      description: "docker repository"
-      baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
-      gpgcheck: no   
-
-  - name: "Installing docker"
-    package:
-      name: docker-ce
-      state: latest
-
-  - name: "Docker service start and enable"
-    service:
+   - name: "Yum configuration of Docker"
+     yum_repository:
        name: docker
-       state: started
-       enabled: yes
-  - name: "pulling httpd image from docker hub"
-    docker_container:
-      name: webapp
-      image: httpd
-      ports:
-        - "80:80"
+       description: "docker repository"
+       baseurl: https://download.docker.com/linux/centos/7/x86_64/stable/
+       gpgcheck: no   
+
+   - name: "Installing docker"
+     package:
+       name: docker-ce
+       state: present
+
+   - name: "Docker service start and enable"
+     service:
+        name: docker
+        state: started
+        enabled: yes
+   - name: "pulling httpd image from docker hub"
+     docker_container:
+       name: webapp
+       image: httpd
+       ports:
+         - "80:80"
+       volumes:
+         - /home/vagrant/index.html:/usr/local/apache2/htdocs/index.html
